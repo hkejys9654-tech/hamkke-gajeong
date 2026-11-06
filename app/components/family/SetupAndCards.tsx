@@ -11,6 +11,7 @@ import {
 } from "../../data";
 import { UpdateFamily } from "./helpers";
 import { BottomActions } from "./Shared";
+import { CardDeck } from "./CardDeck";
 
 const categoryVisuals: Record<string, string> = {
   살림: "🧺",
@@ -146,6 +147,7 @@ export function CardSurvey({
   setNotice: (s: string) => void;
 }) {
   const [openDescription, setOpenDescription] = useState<string | null>(null);
+  const [mode, setMode] = useState<"deck" | "list">("deck");
   const visible = useMemo(
     () => cardsFor(family.familyType),
     [family.familyType],
@@ -265,6 +267,43 @@ export function CardSurvey({
           {groupAnswered}/{groupCards.length}
         </span>
       </div>
+      <div className="mode-switch" role="group" aria-label="보기 방식">
+        <button
+          type="button"
+          className={mode === "deck" ? "selected" : ""}
+          onClick={() => setMode("deck")}
+        >
+          🃏 카드 넘기기
+        </button>
+        <button
+          type="button"
+          className={mode === "list" ? "selected" : ""}
+          onClick={() => setMode("list")}
+        >
+          📋 목록으로 보기
+        </button>
+      </div>
+
+      {mode === "deck" ? (
+        <CardDeck
+          cards={groupCards}
+          data={data}
+          category={category}
+          categoryVisual={categoryVisuals[category]}
+          options={options}
+          optionLabel={optionLabel}
+          onChoose={choose}
+          isLastGroup={groupIndex === categories.length - 1}
+          onNextGroup={() => {
+            if (groupIndex < categories.length - 1) move(1);
+            else if (answered < total) setNotice(`아직 ${total - answered}장이 남았어요.`);
+            else onDone();
+          }}
+          answeredTotal={answered}
+          total={total}
+        />
+      ) : (
+      <>
       <p className="lead">이 역할을 주로 담당하는 가족을 골라주세요.</p>
 
       <div className="owner-legend">
@@ -357,13 +396,15 @@ export function CardSurvey({
           );
         })}
       </ul>
+      </>
+      )}
 
       {groupAnswered < groupCards.length && (
         <button className="bulk-button" onClick={fillRestWithNa}>
           남은 {groupCards.length - groupAnswered}장을 모두 “해당 없음”으로
         </button>
       )}
-      <p className="tap-guide">선택 즉시 저장돼요. 확인 버튼은 없습니다.</p>
+      <p className="tap-guide">선택 즉시 저장돼요. 중간에 그만둬도 이어서 할 수 있어요.</p>
 
       <div className="sticky-card-actions">
         <button
