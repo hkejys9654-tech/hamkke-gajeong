@@ -1,0 +1,281 @@
+import { useMemo, useState } from "react";
+import {
+  cardsFor,
+  childlessQuestion,
+  FamilyRecord,
+  hasAdditionalResponse,
+  hasCompleteIndex,
+  hasSecondAdult,
+  hasTwoPersonReport,
+  indexQuestions,
+  indexScore,
+  indexType,
+  PhaseKey,
+  satisfactionQuestions,
+} from "../../data";
+import { ownerLabel, Status } from "./helpers";
+import { FamilyEditForm, FamilyEdits } from "./FamilyEditForm";
+import { isStoredPhoto, useFamilyPhotoUrl } from "../../photo";
+
+export function FamilyDetail({
+  family,
+  phase,
+  setPhase,
+  onClose,
+  onCompletion,
+  onSave,
+  onDelete,
+  onDeletePhoto,
+}: {
+  family: FamilyRecord;
+  phase: PhaseKey;
+  setPhase: (p: PhaseKey) => void;
+  onClose: () => void;
+  onCompletion: (f: FamilyRecord, v: number) => void;
+  onSave: (f: FamilyRecord, edits: FamilyEdits) => Promise<void>;
+  onDelete: (f: FamilyRecord) => Promise<void>;
+  onDeletePhoto: (f: FamilyRecord) => Promise<void>;
+}) {
+  const [editing, setEditing] = useState(false);
+  const photoUrl = useFamilyPhotoUrl(family);
+  const data = family[phase],
+    score1 = indexScore(data.indexAnswers.adult1),
+    score2 = indexScore(data.indexAnswers.adult2);
+  const twoAdults = hasSecondAdult(family);
+  const representativeComplete = hasCompleteIndex(data.indexAnswers.adult1);
+  const additionalComplete = hasAdditionalResponse(family, phase);
+  const twoPersonReport = hasTwoPersonReport(family);
+  const grouped = useMemo(
+    () => {
+      const visibleCards = cardsFor(family.familyType);
+      return Array.from(new Set(visibleCards.map((c) => c.category))).map(
+        (category) => ({
+          category,
+          cards: visibleCards.filter((c) => c.category === category),
+        }),
+      );
+    },
+    [family.familyType],
+  );
+  return (
+    <div
+      className="detail-backdrop"
+      role="presentation"
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <aside className="detail-panel">
+        <header>
+          <div>
+            <span>{String(family.familyNo).padStart(2, "0")}번 가정</span>
+            <h2>
+              {family.applicantName
+                ? `${family.applicantName} 신청자`
+                : "미등록 가정"}
+            </h2>
+            <p>
+              {family.adults.adult1 || "성인 1 미등록"} ·{" "}
+              {family.adults.adult2 || "성인 2 미등록"} · 신청자{" "}
+              <b>{family.applicantName || "미입력"}</b>
+            </p>
+          </div>
+          <button aria-label="닫기" onClick={onClose}>
+            ×
+          </button>
+        </header>
+        <section className="admin-family-photo">
+          <div>
+            <span className="section-kicker">가족사진</span>
+            <b>{family.familyPhoto ? "등록 완료" : "미등록"}</b>
+            {family.familyPhoto && (
+              <small>
+                홍보 활용 {family.familyPhoto.publicityConsent ? "동의" : "미동의"}
+              </small>
+            )}
+          </div>
+          {family.familyPhoto ? (
+            <div className="admin-family-photo-media">
+              {photoUrl ? (
+                <a
+                  href={photoUrl}
+                  download={`함께가정_${family.familyNo}번_가족사진.jpg`}
+                  aria-label="가족사진 내려받기"
+                >
+                  <img src={photoUrl} alt="등록한 가족사진" />
+                </a>
+              ) : (
+                <p>{isStoredPhoto(family.familyPhoto) ? "사진 불러오는 중…" : "이전 서버에 올린 사진이에요. (담당자 보관본 확인)"}</p>
+              )}
+              <button
+                type="button"
+                className="photo-delete-button"
+                onClick={() => onDeletePhoto(family)}
+              >
+                사진 삭제
+              </button>
+            </div>
+          ) : (
+            <p>등록된 사진이 없어요.</p>
+          )}
+        </section>
+        <div className="detail-tools">
+          <label>
+            활동 인증 횟수
+            <input
+              type="number"
+              min="0"
+              value={family.completionCount || 0}
+              onChange={(e) => onCompletion(family, Number(e.target.value))}
+            />
+          </label>
+          <div className="detail-tool-buttons">
+            <button onClick={() => setEditing((value) => !value)}>
+              {editing ? "수정 닫기" : "정보 수정"}
+            </button>
+            <button className="danger-button" onClick={() => onDelete(family)}>
+              제출자 삭제
+            </button>
+          </div>
+        </div>
+        {editing && (
+          <FamilyEditForm
+            family={family}
+            onSave={(edits) => onSave(family, edits)}
+            onCancel={() => setEditing(false)}
+          />
+        )}
+        <div className="phase-tabs">
+          <button
+            className={phase === "pre" ? "selected" : ""}
+            onClick={() => setPhase("pre")}
+          >
+            사전 진단 <Status value={family.pre.status} />
+          </button>
+          <button
+            className={phase === "post" ? "selected" : ""}
+            onClick={() => setPhase("post")}
+          >
+            사후 진단 <Status value={family.post.status} />
+          </button>
+        </div>
+        {phase === "pre" && (
+          <section className="detail-section">
+            <h3>우리 가족이 바꿔보고 싶은 점</h3>
+            <div className="feedback-box">
+              <p>{family.changeWish || "작성 내용 없음"}</p>
+            </div>
+          </section>
+        )}
+        <section className="detail-section">
+          <h3>우리집 함께지수</h3>
+          <div className={twoAdults ? "mini-score" : "mini-score single"}>
+            <div>
+              <span>{family.applicantName || family.adults.adult1 || "대표 응답자"}</span>
+              <strong>{representativeComplete ? `${score1}점` : "작성 중"}</strong>
+              <small>
+                {representativeComplete ? indexType(score1) : "대표 응답"}
+              </small>
+            </div>
+            {twoAdults && (
+              <div>
+                <span>{data.indexRespondents?.adult2 || family.adults.adult2}</span>
+                <strong>
+                  {additionalComplete ? `${score2}점` : "선택 미참여"}
+                </strong>
+                <small>
+                  {additionalComplete ? indexType(score2) : "추가 응답"}
+                </small>
+              </div>
+            )}
+          </div>
+          {phase === "post" && representativeComplete && (
+            <p className="admin-report-type">
+              리포트 유형: {twoPersonReport ? "2인 응답" : "1인 응답"}
+            </p>
+          )}
+          <div className="index-detail">
+            <div className={twoAdults ? "index-row labels" : "index-row labels single"}>
+              <span>문항</span>
+              <b>{family.applicantName || family.adults.adult1 || "대표"}</b>
+              {twoAdults && <b>{data.indexRespondents?.adult2 || "추가 응답"}</b>}
+            </div>
+            {indexQuestions.map((q, i) => (
+              <div className={twoAdults ? "index-row" : "index-row single"} key={q}>
+                <span>
+                  {i + 1}.{" "}
+                  {i === 2 && family.familyType === "childless"
+                    ? childlessQuestion
+                    : q}
+                </span>
+                <b>{data.indexAnswers.adult1[i] || "-"}</b>
+                {twoAdults && (
+                  <b>{additionalComplete ? data.indexAnswers.adult2[i] || "-" : "-"}</b>
+                )}
+              </div>
+            ))}
+          </div>
+        </section>
+        <section className="detail-section">
+          <h3>일주일 시간</h3>
+          <div className={twoAdults ? "detail-time" : "detail-time single"}>
+            <span />
+            <b>{family.adults.adult1}</b>
+            {twoAdults && <b>{family.adults.adult2}</b>}
+            <span>집안일·돌봄</span>
+            <b>{data.times.adult1.housework || "-"}시간</b>
+            {twoAdults && <b>{data.times.adult2.housework || "-"}시간</b>}
+            <span>가족 챙김</span>
+            <b>{data.times.adult1.mental || "-"}시간</b>
+            {twoAdults && <b>{data.times.adult2.mental || "-"}시간</b>}
+            <span>혼자 쉼</span>
+            <b>{data.times.adult1.rest || "-"}시간</b>
+            {twoAdults && <b>{data.times.adult2.rest || "-"}시간</b>}
+          </div>
+        </section>
+        <section className="detail-section">
+          <h3>함께카드 응답</h3>
+          {grouped.map((group) => (
+            <details key={group.category}>
+              <summary>
+                {group.category}
+                <span>
+                  {group.cards.filter((c) => data.cards[c.id]).length}/
+                  {group.cards.length}
+                </span>
+              </summary>
+              <div className="card-detail-list">
+                {group.cards.map((card) => (
+                  <div key={card.id}>
+                    <span>
+                      <small>{card.id}</small>
+                      {data.customTitles?.[card.id] || card.title}
+                    </span>
+                    <b>{ownerLabel(family, data.cards[card.id])}</b>
+                  </div>
+                ))}
+              </div>
+            </details>
+          ))}
+        </section>
+        {phase === "post" && (
+          <section className="detail-section">
+            <h3>활동 만족도</h3>
+            {satisfactionQuestions.map((q, i) => (
+              <div className="satisfaction-detail" key={q}>
+                <span>
+                  {i + 1}. {q}
+                </span>
+                <b>{data.satisfaction.ratings[i] || "-"}점</b>
+              </div>
+            ))}
+            <div className="feedback-box">
+              <b>자유 의견</b>
+              <p>{data.satisfaction.feedback || "작성 내용 없음"}</p>
+            </div>
+          </section>
+        )}
+      </aside>
+    </div>
+  );
+}

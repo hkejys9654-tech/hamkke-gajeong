@@ -1,0 +1,83 @@
+import { FamilyRecord, PhaseKey } from "../../data";
+import { asset } from "../../asset";
+
+export function Header({
+  family,
+  saved,
+  onHome,
+}: {
+  family: FamilyRecord;
+  saved: string;
+  onHome?: () => void;
+}) {
+  return (
+    <header className="app-header">
+      <button className="logo-button" onClick={onHome} disabled={!onHome}>
+        <img src={asset("seo-gu-symbol.png")} alt="" />
+        <span>
+          <b>함께가정</b>
+          <small>
+            {family.applicantName
+              ? `${family.applicantName}님`
+              : `${family.familyNo}번 가정`}
+          </small>
+        </span>
+      </button>
+      <span className={saved === "저장됨" ? "save-state done" : "save-state"}>
+        {saved}
+      </span>
+    </header>
+  );
+}
+
+export function Progress({
+  step,
+  phase,
+}: {
+  step: number;
+  phase: PhaseKey;
+}) {
+  const last = phase === "post" ? "만족도" : "약속";
+  const labels = ["가족", "카드", "함께지수", "시간", last, "완료"];
+  const at = step;
+  return (
+    <nav className="progress-wrap" aria-label="진행 단계">
+      <div className="progress-meta">
+        <span>{labels[at]}</span>
+        <b>
+          {at + 1} <small>/ {labels.length}단계</small>
+        </b>
+      </div>
+      <div className="progress-line">
+        <i style={{ width: `${((at + 1) / labels.length) * 100}%` }} />
+      </div>
+    </nav>
+  );
+}
+
+export function BottomActions({
+  primary,
+  onPrimary,
+  secondary,
+  onSecondary,
+  busy,
+}: {
+  primary: string;
+  onPrimary: () => void;
+  secondary?: string;
+  onSecondary?: () => void;
+  busy?: boolean;
+}) {
+  return (
+    <div className="bottom-actions">
+      {secondary && (
+        <button className="secondary-button" onClick={onSecondary}>
+          {secondary}
+        </button>
+      )}
+      <button className="primary-button" onClick={onPrimary} disabled={busy}>
+        {busy ? "저장 중…" : primary}
+      </button>
+    </div>
+  );
+}
