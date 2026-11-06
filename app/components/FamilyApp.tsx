@@ -323,10 +323,18 @@ export default function FamilyApp() {
               : "작성 중에도 자동 저장되어 다시 이어서 할 수 있어요."}
           </p>
           <div className="phase-grid">
-            {phases.map((item) => (
+            {phases.map((item) => {
+              const locked =
+                item.key === "post" &&
+                (additional
+                  ? !hasAdditionalResponse(family, "pre")
+                  : !hasCompleteIndex(family.pre.indexAnswers.adult1) ||
+                    family.pre.status !== "submitted");
+              return (
               <button
                 key={item.key}
-                className="phase-card"
+                className={locked ? "phase-card locked" : "phase-card"}
+                aria-disabled={locked}
                 onClick={() => {
                   if (additional) {
                     if (
@@ -369,7 +377,11 @@ export default function FamilyApp() {
                 <span>{item.period}</span>
                 <strong>{item.title}</strong>
                 <em>
-                  {additional
+                  {locked
+                    ? additional
+                      ? "사전 10문항 후 열려요"
+                      : "사전 진단 제출 후 열려요"
+                    : additional
                     ? hasAdditionalResponse(family, item.key)
                       ? "응답 완료 · 다시 보기"
                       : "10문항 참여하기"
@@ -378,8 +390,14 @@ export default function FamilyApp() {
                       : "시작하기"}
                 </em>
               </button>
-            ))}
+              );
+            })}
           </div>
+          {notice && (
+            <p className="phase-notice" role="alert">
+              {notice}
+            </p>
+          )}
         </section>
       </main>
     );
