@@ -322,6 +322,41 @@ export default function FamilyApp() {
               ? "다른 성인의 참여는 선택사항이며, 함께지수 10문항만 작성합니다."
               : "작성 중에도 자동 저장되어 다시 이어서 할 수 있어요."}
           </p>
+          {(() => {
+            const representative =
+              family.applicantName || family.adults.adult1 || "신청자";
+            const preDone = family.pre.status === "submitted";
+            const postDone = family.post.status === "submitted";
+            if (additional) {
+              const phaseLeft = !preDone ? "사전" : !postDone ? "사후" : "";
+              if (!phaseLeft) return null;
+              return (
+                <div className="handoff-box">
+                  <b>📌 {phaseLeft} 가족 진단은 {representative}님 몫이에요</b>
+                  <p>
+                    여기서는 {applicantName.trim()}님의 10문항만 할 수 있어요.
+                    함께카드·시간 등 가족 진단은{" "}
+                    <strong>{representative}</strong> 이름으로 들어가야
+                    나와요.
+                  </p>
+                </div>
+              );
+            }
+            if (!preDone || postDone) return null;
+            const spouseDone = hasAdditionalResponse(family, "post");
+            const spouseName =
+              family.post.indexRespondents?.adult2 || family.adults.adult2;
+            return (
+              <div className="handoff-box">
+                <b>⏰ 사후 진단이 남았어요!</b>
+                <p>
+                  {spouseDone
+                    ? `${spouseName}님은 10문항을 마쳤어요. 이제 ${representative}님이 함께카드·시간·만족도까지 하고 제출하면 끝나요.`
+                    : "30일 활동을 마쳤다면 아래 '사후 진단'을 끝까지 하고 꼭 제출을 눌러주세요."}
+                </p>
+              </div>
+            );
+          })()}
           <div className="phase-grid">
             {phases.map((item) => {
               const locked =
@@ -436,6 +471,7 @@ export default function FamilyApp() {
         )}
         {step === finalStep && (
           <AdditionalResult
+            family={family}
             phase={phase}
             respondentName={applicantName.trim()}
             onHome={() => setPhase(null)}

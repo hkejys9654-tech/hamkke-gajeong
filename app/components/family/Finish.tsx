@@ -73,16 +73,22 @@ function changeLabel(before: number, after: number) {
 }
 
 export function AdditionalResult({
+  family,
   phase,
   respondentName,
   onHome,
   onEdit,
 }: {
+  family: FamilyRecord;
   phase: PhaseKey;
   respondentName: string;
   onHome: () => void;
   onEdit: () => void;
 }) {
+  const representative =
+    family.applicantName || family.adults.adult1 || "신청자";
+  const familyDone = family[phase].status === "submitted";
+  const phaseLabel = phase === "pre" ? "사전" : "사후";
   return (
     <section className="content-card result-card additional-result">
       <div className="result-hero">
@@ -92,10 +98,34 @@ export function AdditionalResult({
           <h2>{respondentName}님의 응답을 저장했어요</h2>
         </div>
       </div>
+      {familyDone ? (
+        <div className="handoff-box done">
+          <b>🎉 {phaseLabel} 진단이 모두 끝났어요!</b>
+          <p>{representative}님이 가족 진단까지 제출했어요.</p>
+        </div>
+      ) : (
+        <div className="handoff-box">
+          <b>⚠️ 아직 {phaseLabel} 진단이 끝나지 않았어요</b>
+          <p>
+            함께카드·일주일 시간·{phase === "post" ? "만족도" : "약속"}는{" "}
+            <strong>{representative}님</strong>이 해야 해요.
+          </p>
+          <ol>
+            <li>같은 주소로 들어가서</li>
+            <li>
+              가정 번호 <strong>{String(family.familyNo).padStart(2, "0")}</strong>,
+              이름 <strong>{representative}</strong>(으)로 시작한 뒤
+            </li>
+            <li>
+              {phaseLabel} 진단을 끝까지 하고 <strong>제출</strong>을 눌러주세요.
+            </li>
+          </ol>
+          <small>{representative}님께 꼭 전달해주세요!</small>
+        </div>
+      )}
       <p className="report-basis">
         {phase === "pre" ? "사전" : "사후"} 함께지수 10문항이 가족
-        리포트에 반영됩니다. 다른 성인의 참여는 가족의 진단 완료 여부에
-        영향을 주지 않습니다.
+        리포트에 반영됩니다.
       </p>
       <div className="bottom-actions">
         <button className="secondary-button" onClick={onHome}>

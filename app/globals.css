@@ -2407,3 +2407,37 @@ button.table-row:hover {
   gap: 10px;
   width: 100%;
 }
+
+/* 신청자·배우자 안내 박스 */
+.handoff-box {
+  margin: 18px 0 4px;
+  padding: 16px 18px;
+  border-radius: 18px;
+  background: #fff4e5;
+  border: 2px solid #f5bf3b;
+  color: #5c3d00;
+  text-align: left;
+}
+.handoff-box b {
+  display: block;
+  font-size: 18px;
+  margin-bottom: 6px;
+}
+.handoff-box p {
+  margin: 0 0 6px;
+  line-height: 1.55;
+}
+.handoff-box ol {
+  margin: 8px 0;
+  padding-left: 20px;
+  line-height: 1.7;
+}
+.handoff-box small {
+  font-weight: 700;
+  color: #8a5a00;
+}
+.handoff-box.done {
+  background: var(--mint);
+  border-color: #9fd3be;
+  color: var(--green);
+}
